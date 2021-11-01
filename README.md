@@ -2,15 +2,17 @@
 
 
 Classes:
-    - Auction
+    - Auction (File prize, int auctionID, File pic, int timeLimit)
         - Variables:
-            - String auctionName
+            - File prize
+                -The item being auctioned for
+            - auctionName (String)
                 - The name of the object set by a Seller. 
                 - The length of the String must a min of 1 and a max of 100
-            - File image
+            - File pic
                 - The image for the auction. 
-                - Use FileReader to read file specified by the String fileName entered by the seller.
             - int timeLimit
+                - timeLimit of auction
             - int auctionID
                 - constructor will generate a unique auction ID for every Auction object
             - Seller seller 
@@ -23,29 +25,39 @@ Classes:
                 - Does not include highestBidder (the current highest bidder)
         - Methods:
             - startAuction (): begins the auction
-                - starts timer
+                - starts timer at initial time, timeLimit.
                 - makes auction visible to all bidders
+            - updateHighestBidder (Seller newBidder)
+                - updates the variable highestBidder to the new higghest bidder and subtracts amount from highestBidder's wallet
+                - refunds the money of the last highestBidder
             - endAuction (): ends the auction
-                - subtracts highestBidAmount from highestBidder's wallet
                 - gives item to highestBidder
                 - randomly selects someone from pastBidderList and gives 50% of highestBidAmount to the selected Buyder
                 - distributes the other 50% of highestBidAmount to the CS class
+            
     - Seller (String name, int sellerID)
         - Variables:
-            - String sellerName
-            - int sellerID
+            - sellerName (String)
+            - sellerID (int)
+            - currentAuction (Auction)
         - Methods:
-            - createAuction (string auctionName, String fileName, int timeLimit)
-            - startAuction (): calls Auction's startAuction method
-            - endAuction (): calls Auction's endAuction method
+            - createAuction (File prize, int auctionID, File pic, int timeLimit)
+                - creates a new Auction (prize, auctionID, fileName, timeLimit) and stores the Auction in currentAuction
+            - sets instance variable currentAuction to a new Auction object with the above parameters
+            - startAuction (): calls currentAuction's startAuction method
+            - endAuction (): calls currentAuction's endAuction method
     - Buyer (String name, String buyerID)
         - Variables:
-            - String buyerName
-            - String buyerID
+            - buyerName (String)
+            - buyerID (int)
                 - the wallet ID of the buyer
         - Methods:
             - bid (int auctionID, double amount)
-                - bids double amount to the auction with the corresponding auction ID
+                - parameters
+                    - auctionID (int) is the ID of the auction that the bid is being placed to
+                    - amount (double) is the value of the bid being placed
+                - behavior
+                    - bids double amount to the auction with the corresponding auction ID
             
 
 
