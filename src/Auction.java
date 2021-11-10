@@ -15,6 +15,8 @@ public class Auction {
 	private Buyer highestBidder;
 	private double highestBidAmount;
 	private ArrayList<Buyer> pastBidderList;
+	public boolean isOpen;
+
 	
 	
 	public Auction (Seller seller, String fileName, String auctionName, int timeLimit)
@@ -22,11 +24,11 @@ public class Auction {
 		this.seller = seller;
 		this.auctionName = auctionName;
 		this.timeLimit = timeLimit;
-		
+		this.isOpen = true;
 		highestBidder = null;
 		highestBidAmount = 0.0;
 		pastBidderList = new ArrayList<Buyer>();
-		
+//		close = new endAuction();
 		
 		auctionID = auctionCount;
 		auctionCount++;
@@ -35,6 +37,51 @@ public class Auction {
 	
 	public void startAuction()
 	{
-		t
+		isOpen = true;
 	}
+	
+	public void closeAuction()
+	{
+		isOpen = false;
+		((Buyer) highestBidder).subtractBalance (highestBidAmount);
+		seller.changeBalance (highestBidAmount);
+	}
+	public int getID()
+	{
+		return auctionID;
+	}
+	
+	public void receiveBid(int newBidderID, double amount) throws Exception
+	{
+		Buyer newBidder = Admin.getBuyer(newBidderID);
+		if (isOpen)
+		{ 
+			updateHighestBidder(newBidder);
+			pastBidderList.add(newBidder);
+
+		}
+		else
+		{
+			throw new Exception ("Bid is closed");
+		}
+		
+	}
+	
+	public void updateHighestBidder(Buyer newBidder)
+	{
+		highestBidder= newBidder;
+		
+	}
+	
+	public void updateHighestBid (double amount)
+	{
+		highestBidAmount = amount;
+	}
+//
+//class endAuction extends TimerTask {
+//	private int isClosed = false; 
+//    public void run() {
+//    	isClosed = true;
+//        timer.cancel(); //Terminate the timer thread
+//    }
 }
