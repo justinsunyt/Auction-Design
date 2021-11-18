@@ -1,0 +1,109 @@
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity >=0.8.9;
+
+interface IERC721 {
+    function transfer(address, uint) external;
+
+    function transferFrom(
+        address,
+        address,
+        uint
+    ) external;
+}
+
+contract AuctionInSolidity {
+    event Start();
+    event Bid(address indexed sender, uint amount);
+    event End(address winner, uint amount);
+
+    address payable private seller;
+    address payable private highestBidder;
+    uint256 private initialTime;
+    uint256 private timeLimit;
+    uint256 private timeLimitIncrease;
+    address  [] private pastBidders;
+    uint256 private highestBidAmount;
+    IERC721 public nft;
+    uint public nftID;
+    string public auctionTitle;
+    bool public started;
+    bool public ended;
+    mapping(address => uint) public bids;
+
+    constructor (address userNFT, uint userNFTID, uint256 userTimeLimit, uint256 userTimeLimitIncrease) 
+    {
+        seller = payable(msg.sender);
+        nft = IERC721(userNFT);
+        nftID = userNFTID;
+        highestBidAmount = 0;
+        highestBidder = payable(address (0));
+        timeLimit= userTimeLimit;
+        timeLimitIncrease= userTimeLimitIncrease;
+        started = false;
+        ended = false;
+    }
+    
+    modifier isSeller
+    {
+        require (msg.sender == seller);
+        _;
+    }
+    
+    modifier isOpen
+    {
+        require ((block.timestamp - initialTime)<timeLimit);
+        require (!ended);
+        _;
+    }
+    
+
+    function start() external isSeller{
+        require(!started, "Auction has already started");
+
+        nft.transferFrom(msg.sender, address(this), nftID);
+        started = true;
+        initialTime = block.timestamp;
+
+        emit Start();
+    }
+
+    function bid() external payable isOpen{
+        
+        require(msg.value > highestBidAmount, "you did not pay more than the current highest bid.");
+        
+        pastBidders.push (highestBidder);
+        if (highestBidder != address(0)) {
+            bids[highestBidder] += highestBidAmount;
+        }
+
+        highestBidder = payable(msg.sender);
+        highestBidAmount = msg.value;
+        timeLimit = timeLimit + timeLimitIncrease;
+
+        emit Bid(msg.sender, msg.value);
+    }
+
+    function end() external{
+        require (ended == false);
+        require ((block.timestamp - initialTime)>timeLimit);
+        
+        ended = true;
+        if (highestBidder != address(0)) {
+            nft.transfer(highestBidder, nftID);
+            uint256 transferAmount = highestBidAmount/2;
+            uint randomHash = uint(keccak256(abi.encodePacked(
+            block.timestamp, 
+            block.difficulty, 
+            msg.sender)));
+            uint index = randomHash % pastBidders.length;            
+            payable(pastBidders[index]).transfer(transferAmount);
+            seller.transfer(transferAmount);
+        } else {
+            nft.transfer(seller, nftID);
+            seller.transfer (1);
+        }
+
+        emit End(highestBidder, highestBidAmount);
+    }
+}
