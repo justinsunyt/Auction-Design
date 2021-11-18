@@ -1,0 +1,5 @@
+Unique Feature Updates
+- keeps pastBidderList array of addresses
+- selects a random past bidder upon completion of the auction to give 50% of winning price to
+	- other 50% goes to seller
+- User inputs a timeLimit for the auction, as well as a timeLimitIncrease, which is the amount that the time limit will increase after each bid
