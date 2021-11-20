@@ -2,46 +2,51 @@
 
 pragma solidity >=0.8.9;
 
-interface IERC721 {
-    function transfer(address, uint) external;
+interface ERC721 /* is ERC165 */ {
 
-    function transferFrom(
-        address,
-        address,
-        uint
-    ) external;
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external payable;
+
 }
+
+
 
 contract AuctionInSolidity {
     event Start();
     event Bid(address indexed sender, uint amount);
     event End(address winner, uint amount);
 
-    address payable private seller;
-    address payable private highestBidder;
-    uint256 private initialTime;
-    uint256 private timeLimit;
-    uint256 private timeLimitIncrease;
-    address  [] private pastBidders;
-    uint256 private highestBidAmount;
-    IERC721 public nft;
+    address payable public seller;
+    address payable public highestBidder;
+    uint256 public initialTime;
+    uint256 public timeLimit;
+    uint256 public timeLimitIncrease;
+    address  [] public pastBidders;
+    uint256 public highestBidAmount;
+    ERC721 public nft;
     uint public nftID;
-    string public auctionTitle;
     bool public started;
     bool public ended;
-    mapping(address => uint) public bids;
 
-    constructor (address userNFT, uint userNFTID, uint256 userTimeLimit, uint256 userTimeLimitIncrease) 
+    constructor (address userNFT, uint256 userTimeLimit, uint256 userTimeLimitIncrease) 
     {
         seller = payable(msg.sender);
-        nft = IERC721(userNFT);
-        nftID = userNFTID;
+        nft = ERC721(userNFT);
         highestBidAmount = 0;
         highestBidder = payable(address (0));
         timeLimit= userTimeLimit;
         timeLimitIncrease= userTimeLimitIncrease;
         started = false;
         ended = false;
+    }
+    
+    function setNFTID (uint userNFTID) public isSeller
+    {
+        nftID = userNFTID;
+    }
+    
+    function setTimeLimit (uint256 newLimit) public isSeller
+    {
+        timeLimit = newLimit;
     }
     
     modifier isSeller
@@ -58,52 +63,52 @@ contract AuctionInSolidity {
     }
     
 
-    function start() external isSeller{
+    function start() public isSeller{
         require(!started, "Auction has already started");
 
-        nft.transferFrom(msg.sender, address(this), nftID);
+ //       nft.transferFrom(msg.sender, address(this), nftID);
         started = true;
         initialTime = block.timestamp;
 
         emit Start();
     }
 
-    function bid() external payable isOpen{
+    function bid(uint256 amount) public payable isOpen{
         
-        require(msg.value > highestBidAmount, "you did not pay more than the current highest bid.");
+        require(amount > highestBidAmount, "you did not pay more than the current highest bid.");
         
         pastBidders.push (highestBidder);
-        if (highestBidder != address(0)) {
-            bids[highestBidder] += highestBidAmount;
-        }
 
         highestBidder = payable(msg.sender);
-        highestBidAmount = msg.value;
+        highestBidAmount = amount;
         timeLimit = timeLimit + timeLimitIncrease;
 
-        emit Bid(msg.sender, msg.value);
+        emit Bid(msg.sender, amount);
     }
 
-    function end() external{
+    function end() public payable
+    {
         require (ended == false);
-        require ((block.timestamp - initialTime)>timeLimit);
+        require ((block.timestamp - initialTime)>timeLimit, "time not ended");
         
         ended = true;
-        if (highestBidder != address(0)) {
-            nft.transfer(highestBidder, nftID);
-            uint256 transferAmount = highestBidAmount/2;
-            uint randomHash = uint(keccak256(abi.encodePacked(
-            block.timestamp, 
-            block.difficulty, 
-            msg.sender)));
-            uint index = randomHash % pastBidders.length;            
-            payable(pastBidders[index]).transfer(transferAmount);
-            seller.transfer(transferAmount);
-        } else {
-            nft.transfer(seller, nftID);
-            seller.transfer (1);
-        }
+        if (highestBidder != address(0)) 
+        {
+            nft.safeTransferFrom(address(this), highestBidder, nftID);
+//            uint256 transferAmount = highestBidAmount/2;
+//          uint randomHash = uint(keccak256(abi.encodePacked(
+//          block.timestamp, 
+//            block.difficulty, 
+//            msg.sender)));
+//            uint index = randomHash % pastBidders.length;            
+//            payable(pastBidders[index]).transfer(transferAmount);
+//            seller.transfer(transferAmount);
+//        } else {
+//            nft.transfer(seller, nftID);
+//            seller.transfer (1);
+//        }
 
-        emit End(highestBidder, highestBidAmount);
-    }
+//        emit End(highestBidder, highestBidAmount);
+        }
+}
 }
